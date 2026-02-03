@@ -1,0 +1,54 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 20rpx;
+  box-sizing: border-box;
+}
+
+.chat-window {
+  flex: 1;
+  margin-bottom: 20rpx;
+  overflow: hidden;
+}
+
+.message-row {
+  margin-bottom: 15rpx;
+  word-break: break-all;
+  line-height: 1.4;
+  font-size: 28rpx;
+}
+
+.user { color: #00FF41; }
+.system { color: #00FF41; text-shadow: 0 0 5rpx #00FF41; }
+
+.prefix {
+  font-weight: bold;
+}
+
+.cursor {
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.input-area {
+  display: flex;
+  align-items: center;
+  border-top: 1rpx solid #004411;
+  padding-top: 20rpx;
+}
+
+.input-prefix {
+  margin-right: 10rpx;
+  font-weight: bold;
+}
+
+.main-input {
+  flex: 1;
+  height: 60rpx;
+  color: #00FF41;
+}

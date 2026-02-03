@@ -1,0 +1,5 @@
+page {
+  background-color: #000000;
+  color: #00FF41;
+  font-family: 'Courier New', Courier, monospace;
+}

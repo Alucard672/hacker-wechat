@@ -1,0 +1,24 @@
+<view class="container">
+  <scroll-view class="chat-window" scroll-y="true" scroll-into-view="{{lastMessageId}}">
+    <view wx:for="{{messages}}" wx:key="id" id="{{item.id}}" class="message-row {{item.type}}">
+      <text class="prefix">[{{item.time}}] {{item.type == 'user' ? 'USER@ROOT' : 'CLAW@SYSTEM'}}# </text>
+      <text class="content">{{item.text}}</text>
+    </view>
+    <view wx:if="{{isTyping}}" class="message-row system">
+      <text class="prefix">CLAW@SYSTEM# </text>
+      <text class="cursor">_</text>
+    </view>
+  </scroll-view>
+
+  <view class="input-area">
+    <text class="input-prefix">></text>
+    <input class="main-input" 
+           value="{{inputValue}}" 
+           bindinput="onInput" 
+           bindconfirm="sendMessage" 
+           placeholder="EXECUTE COMMAND..." 
+           placeholder-style="color: #004411;"
+           confirm-type="send"
+           focus="true"/>
+  </view>
+</view>
