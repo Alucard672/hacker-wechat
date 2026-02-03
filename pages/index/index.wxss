@@ -35,6 +35,44 @@
   50% { opacity: 0; }
 }
 
+.content {
+  display: block;
+}
+
+.msg-image {
+  max-width: 300rpx;
+  max-height: 300rpx;
+  border: 1rpx solid #00FF41;
+  margin-top: 10rpx;
+}
+
+.file-box {
+  background: #002200;
+  border: 1rpx dashed #00FF41;
+  padding: 10rpx;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+}
+
+.action-bar {
+  display: flex;
+  gap: 20rpx;
+  padding-bottom: 20rpx;
+}
+
+.action-btn {
+  font-size: 24rpx;
+  border: 1rpx solid #00FF41;
+  padding: 5rpx 15rpx;
+  background: transparent;
+  color: #00FF41;
+}
+
+.action-btn:active {
+  background: #00FF41;
+  color: #000000;
+}
+
 .input-area {
   display: flex;
   align-items: center;
