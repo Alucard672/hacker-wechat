@@ -66,6 +66,9 @@ Page({
       url: app.globalData.uploadUrl,
       filePath: path,
       name: 'file',
+      header: {
+        'Authorization': 'Bearer 888888'
+      },
       formData: { type: type, sessionKey: app.globalData.sessionKey || '' },
       success: (res) => {
         let msg = '文件已接收并处理。';
@@ -133,7 +136,8 @@ Page({
       url: requestUrl,
       method: 'POST',
       header: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer 888888'
       },
       data: requestData,
       success: (res) => {
