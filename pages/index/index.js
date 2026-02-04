@@ -1,74 +1,54 @@
 const app = getApp();
 
+function loadHistory(openId) {
+  if (!openId) return [];
+  const data = wx.getStorageSync(`claw_history_${openId}`);
+  if (!Array.isArray(data)) return [];
+  return data.map((msg, index) => ({
+    ...msg,
+    isLatest: index === data.length - 1
+  }));
+}
+
+function saveHistory(openId, messages) {
+  if (!openId) return;
+  wx.setStorageSync(`claw_history_${openId}`, messages);
+}
+
 Page({
   data: {
     messages: [
-      { id: 'm0', time: '01:22', type: 'system', text: '连接已建立。系统在线。' }
+      { id: 'm0', time: '01:22', type: 'system', text: '极客笔记已就绪。', isLatest: true }
     ],
     inputValue: '',
     lastMessageId: 'm0',
-    isTyping: false,
-    userPhone: '',
-    assistantName: '墨影'
+    isTyping: false
   },
 
   onLoad() {
-    const phone = wx.getStorageSync('user_phone');
-    if (!phone) {
-      wx.reLaunch({ url: '../login/login' });
+    const openId = wx.getStorageSync('claw_openid');
+    if (!openId) {
+      wx.reLaunch({ url: '/pages/login/login' });
       return;
     }
-    this.setData({ userPhone: phone });
-
-    let sessionKey = wx.getStorageSync('claw_session_key');
-    if (!sessionKey) {
-      // 容错处理
-      sessionKey = wx.getStorageSync('user_openid') || `user-${phone}`;
-      wx.setStorageSync('claw_session_key', sessionKey);
+    const phone = wx.getStorageSync(`claw_phone_${openId}`);
+    if (!phone) {
+      wx.reLaunch({ url: '/pages/login/login' });
+      return;
     }
-    app.globalData.sessionKey = sessionKey;
-    
-    // 拉取历史记录
-    this.fetchHistory();
+    app.globalData.openId = openId;
+    app.globalData.sessionKey = openId;
+
+    const history = loadHistory(openId);
+    if (history.length) {
+      this.setData({
+        messages: history,
+        lastMessageId: history[history.length - 1].id
+      });
+    }
   },
 
-  fetchHistory() {
-    wx.request({
-      url: `${app.globalData.apiUrl.replace('/wechat', '').replace('/v1/chat/completions', '')}/api/v1/sessions/history`,
-      method: 'GET',
-      data: {
-        sessionKey: app.globalData.sessionKey,
-        limit: 30
-      },
-      header: {
-        'Authorization': 'Bearer 888888'
-      },
-      success: (res) => {
-        if (res.data && res.data.data) {
-          const history = res.data.data.map(m => ({
-            id: m.id,
-            time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            type: m.role === 'user' ? 'user' : 'system',
-            text: m.content
-          })).reverse();
-          
-          if (history.length > 0) {
-            this.setData({ messages: history, lastMessageId: history[history.length-1].id });
-          } else {
-            // 如果没有历史记录，说明是新用户，发送一条隐藏的初始化触发指令（可选）
-            // 或者等待用户发第一句话，Agent 会根据 AGENTS.md 自动触发 onboarding
-          }
-        }
-      }
-    });
-  },
-
-  logout() {
-    wx.clearStorageSync();
-    wx.reLaunch({ url: '../login/login' });
-  },
-
-  // 这里的逻辑保持老大之前的多模态功能
+  // 选择并上传图片
   chooseImage() {
     wx.chooseMedia({
       count: 1,
@@ -81,28 +61,30 @@ Page({
     });
   },
 
+  // 选择并上传文件 (PDF/DOC等)
   chooseFile() {
     wx.chooseMessageFile({
       count: 1,
       type: 'file',
       success: (res) => {
         const file = res.tempFiles[0];
-        this.addMessage('user', `正在发送文件：${file.name}`, { file: file.path, fileName: file.name });
+        this.addMessage('user', `发送文件：${file.name}`, { file: file.path, fileName: file.name });
         this.uploadFile(file.path, 'file');
       }
     });
   },
 
+  // 语音输入
   startVoice() {
     this.recorder = wx.getRecorderManager();
     this.recorder.start({ format: 'mp3' });
-    wx.showToast({ title: '正在录音...', icon: 'none' });
+    wx.showToast({ title: '录音中...', icon: 'none' });
   },
 
   stopVoice() {
     this.recorder.stop();
     this.recorder.onStop((res) => {
-      this.addMessage('user', '发送了一条语音消息。');
+      this.addMessage('user', '已发送语音消息。');
       this.uploadFile(res.tempFilePath, 'audio');
     });
   },
@@ -113,18 +95,18 @@ Page({
       url: app.globalData.uploadUrl,
       filePath: path,
       name: 'file',
-      header: { 'Authorization': 'Bearer 888888' },
-      formData: { type: type, sessionKey: app.globalData.sessionKey || '' },
+      formData: { type: type, sessionKey: app.globalData.openId || app.globalData.sessionKey || '' },
       success: (res) => {
-        let msg = '文件已处理。';
+        let msg = '文件已接收并处理。';
         try {
           const data = JSON.parse(res.data);
           msg = data.reply || data.message || msg;
         } catch (e) {}
+
         this.addMessage('system', msg);
       },
       fail: (err) => {
-        this.addMessage('system', `ERROR: UPLOAD FAILED (${err.errMsg})`);
+        this.addMessage('system', `错误：上传失败（${err.errMsg}）`);
       },
       complete: () => {
         this.setData({ isTyping: false });
@@ -135,10 +117,16 @@ Page({
   addMessage(type, text, extra = {}) {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const id = type[0] + Date.now() + Math.floor(Math.random() * 1000);
+    const nextMessages = this.data.messages.map((msg) => ({ ...msg, isLatest: false }));
+    const updatedMessages = [...nextMessages, { id, time: timestamp, type, text, isLatest: true, ...extra }];
+
     this.setData({
-      messages: [...this.data.messages, { id, time: timestamp, type, text, ...extra }],
+      messages: updatedMessages,
       lastMessageId: id
     });
+
+    saveHistory(app.globalData.openId, updatedMessages);
+    return id;
   },
 
   onInput(e) {
@@ -149,59 +137,40 @@ Page({
     const text = this.data.inputValue.trim();
     if (!text) return;
 
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const userMsgId = 'u' + Date.now() + Math.floor(Math.random() * 1000);
-
-    const newMessages = [...this.data.messages, {
-      id: userMsgId,
-      time: timestamp,
-      type: 'user',
-      text: text
-    }];
+    this.addMessage('user', text);
 
     this.setData({
-      messages: newMessages,
       inputValue: '',
-      lastMessageId: userMsgId,
       isTyping: true
     });
 
+    // 这里是调用 OpenClaw 的逻辑
     wx.request({
       url: app.globalData.apiUrl,
       method: 'POST',
       header: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer 888888'
+        'Content-Type': 'application/json'
       },
       data: {
         model: 'openclaw:main',
         messages: [{ role: 'user', content: text }],
-        user: app.globalData.sessionKey || 'unknown'
+        user: app.globalData.openId || app.globalData.sessionKey || ''
       },
       success: (res) => {
-        console.log('[发送消息] 原始响应:', res.data);
-        let replyText = '命令已执行。';
-        
-        // 兼容处理：OpenAI 格式
-        if (res.data && res.data.choices && res.data.choices[0] && res.data.choices[0].message) {
-          replyText = res.data.choices[0].message.content;
-        } 
-        // 兼容处理：OpenClaw 直接回复格式
-        else if (res.data && res.data.data && res.data.data.reply) {
-          replyText = res.data.data.reply;
+        // 增加对不同返回格式的兼容处理
+        let replyText = '已执行。';
+        if (res.data) {
+          replyText = res.data.reply || res.data.message || (typeof res.data === 'string' ? res.data : replyText);
         }
-        else if (res.data && res.data.reply) {
-          replyText = res.data.reply;
-        }
-        
+
         this.addMessage('system', replyText);
       },
       fail: (err) => {
         console.error('Uplink error:', err);
-        this.addMessage('system', `错误：上传失败 (${err.errMsg})`);
+        this.addMessage('system', `错误：请求失败（${err.errMsg || 'UNKNOWN_ERROR'}）`);
       },
       complete: () => {
-        this.setData({ isTyping: false, inputValue: '' });
+        this.setData({ isTyping: false });
       }
     });
   },

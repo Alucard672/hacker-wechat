@@ -1,60 +1,40 @@
 <view class="container">
-  <scroll-view 
-    class="chat-list" 
-    scroll-y 
-    scroll-with-animation 
-    scroll-into-view="{{lastMessageId}}">
-    
-    <view wx:for="{{messages}}" wx:key="id" id="{{item.id}}" class="message-item {{item.type}}">
-      <view class="msg-header">
-        <text class="time">[{{item.time}}]</text>
-        <text class="user-id">{{item.type === 'user' ? userPhone : assistantName}}@{{item.type === 'user' ? '终端' : '系统'}}#</text>
-      </view>
-      
-      <view class="msg-body">
-        <text wx:if="{{item.text}}" selectable>{{item.text}}</text>
-        <image 
-          wx:if="{{item.image}}" 
-          src="{{item.image}}" 
-          mode="widthFix" 
-          class="msg-image"
-          bindtap="previewImage"
-          data-src="{{item.image}}"></image>
-        <view 
-          wx:if="{{item.file}}" 
-          class="msg-file" 
-          bindtap="openFile" 
-          data-url="{{item.file}}">
-          <text>📄 {{item.fileName || '文件下载'}}</text>
+  <view class="topbar">
+    <image class="logo" src="/images/logo.png" mode="heightFix"></image>
+    <text class="topbar-title">极客笔记</text>
+  </view>
+  <scroll-view class="chat-window" scroll-y="true" scroll-into-view="{{lastMessageId}}">
+    <view wx:for="{{messages}}" wx:key="id" id="{{item.id}}" class="message-row {{item.type}} {{item.isLatest ? 'latest' : 'history'}}">
+      <text class="prefix">[{{item.time}}] {{item.type == 'user' ? '用户' : '助手'}}# </text>
+      <view class="content">
+        <text wx:if="{{item.text}}">{{item.text}}</text>
+        <image wx:if="{{item.image}}" src="{{item.image}}" mode="aspectFit" class="msg-image" bindtap="previewImage" data-src="{{item.image}}"></image>
+        <view wx:if="{{item.file}}" class="file-box" bindtap="openFile" data-url="{{item.file}}">
+          <text>FILE: {{item.fileName || 'ATTACHMENT'}}</text>
         </view>
       </view>
     </view>
-    
-    <view class="typing-indicator" wx:if="{{isTyping}}">
-      <text>正在分析输入数据...</text>
+    <view wx:if="{{isTyping}}" class="message-row system">
+      <text class="prefix">助手# </text>
+      <text class="cursor">_</text>
     </view>
-    
-    <view id="bottom-anchor"></view>
   </scroll-view>
 
+  <view class="action-bar">
+    <view class="action-btn" bindtap="chooseImage">图片</view>
+    <view class="action-btn" bindtap="chooseFile">文件</view>
+    <view class="action-btn" bindtouchstart="startVoice" bindtouchend="stopVoice">语音</view>
+  </view>
+
   <view class="input-area">
-    <view class="input-box">
-      <input 
-        class="main-input" 
-        value="{{inputValue}}" 
-        placeholder="输入指令..." 
-        placeholder-style="color: #004400"
-        bindinput="onInput"
-        bindconfirm="sendMessage"
-        confirm-type="send"
-      />
-      <view class="send-btn" bindtap="sendMessage">执行</view>
-    </view>
-    <view class="tool-bar">
-      <view class="tool-item" bindtap="chooseImage">图片</view>
-      <view class="tool-item" bindtap="chooseFile">文件</view>
-      <view class="tool-item" bindtouchstart="startVoice" bindtouchend="stopVoice">语音</view>
-      <view class="tool-item logout" bindtap="logout">退出</view>
-    </view>
+    <text class="input-prefix">></text>
+    <input class="main-input" 
+           value="{{inputValue}}" 
+           bindinput="onInput" 
+           bindconfirm="sendMessage" 
+           placeholder="输入消息..." 
+           placeholder-style="color: #004411;"
+           confirm-type="send"
+           focus="true"/>
   </view>
 </view>
