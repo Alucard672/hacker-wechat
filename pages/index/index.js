@@ -127,7 +127,7 @@ Page({
     const requestUrl = app.globalData.apiUrl;
     const requestData = {
       message: text,
-      sessionKey: app.globalData.sessionKey || ''
+      label: 'main'
     };
     console.log('[发送消息] URL:', requestUrl);
     console.log('[发送消息] 请求体:', JSON.stringify(requestData));
