@@ -141,7 +141,13 @@ Page({
         // 增加对不同返回格式的兼容处理
         let replyText = '命令已执行。';
         if (res.data) {
-          replyText = res.data.reply || res.data.message || (typeof res.data === 'string' ? res.data : replyText);
+          // OpenClaw API 返回格式通常是 { status: "ok", data: { reply: "..." } } 
+          // 或者如果是 streaming 可能不同，但这里是非流式请求
+          if (res.data.data && res.data.data.reply) {
+            replyText = res.data.data.reply;
+          } else {
+            replyText = res.data.reply || res.data.message || (typeof res.data === 'string' ? res.data : replyText);
+          }
         }
         
         this.addMessage('system', replyText);
