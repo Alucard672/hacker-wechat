@@ -7,7 +7,7 @@
     "backgroundColor": "#000000",
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#000000",
-    "navigationBarTitleText": "TERMINAL_CLAW",
+    "navigationBarTitleText": "极客笔记",
     "navigationBarTextStyle": "white"
   },
   "sitemapLocation": "sitemap.json"

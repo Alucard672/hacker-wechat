@@ -25,6 +25,8 @@
   font-size: 28rpx;
 }
 
+ 
+
 .chat-window {
   flex: 1;
   margin-bottom: 20rpx;

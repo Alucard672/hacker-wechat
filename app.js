@@ -3,8 +3,9 @@ App({
     console.log('Terminal initialized...');
   },
   globalData: {
-  apiUrl: 'https://ding.calctextile.com/wechat',
-  uploadUrl: 'https://ding.calctextile.com/wechat'
-}
-
-})
+    apiUrl: 'https://ding.calctextile.com/wechat',
+    uploadUrl: 'https://ding.calctextile.com/wechat',
+    openId: '',
+    sessionKey: ''
+  }
+});
