@@ -10,31 +10,43 @@ Page({
     const phone = wx.getStorageSync('user_phone');
     if (phone) {
       wx.reLaunch({ url: '../index/index' });
+      return;
     }
+
+    // 静默登录获取 OpenID (通过 code 模拟)
+    wx.login({
+      success: (res) => {
+        if (res.code) {
+          // 在实际项目中，这里应该发给后端换取真实的 openid
+          const openid = `id-${res.code}`; 
+          wx.setStorageSync('user_openid', openid);
+        }
+      }
+    });
   },
 
   getPhoneNumber(e) {
     if (e.detail.errMsg === 'getPhoneNumber:ok') {
-      const { code, encryptedData, iv } = e.detail;
+      const { code } = e.detail;
+      const openid = wx.getStorageSync('user_openid') || 'unknown';
       
       wx.showLoading({ title: 'AUTHENTICATING...' });
 
-      // 这里先模拟登录成功，因为解密需要后端配合
-      // 在实际生产中，你会把 code 发给后端换取手机号
+      // 模拟后端换取手机号逻辑
+      // 实际开发中，请将 code 和 openid 发送到后端，后端调用微信 API 获取手机号
       setTimeout(() => {
-        // 假设获取到了手机号（实际从后端返回）
-        const mockPhone = '138****8888'; 
+        const mockPhone = '138****8888'; // 这里应当是后端返回的真实手机号
         wx.setStorageSync('user_phone', mockPhone);
         
-        // 用手机号作为 sessionKey 的一部分，实现多端同步
-        wx.setStorageSync('claw_session_key', `user-${mockPhone}`);
-        app.globalData.sessionKey = `user-${mockPhone}`;
+        // sessionKey 使用 openid 确保全局唯一且稳定
+        wx.setStorageSync('claw_session_key', openid);
+        app.globalData.sessionKey = openid;
 
         wx.hideLoading();
         wx.reLaunch({ url: '../index/index' });
-      }, 1500);
+      }, 1200);
     } else {
-      wx.showToast({ title: 'Login Required', icon: 'none' });
+      wx.showToast({ title: '需要手机号登录', icon: 'none' });
     }
   }
 });

@@ -1,36 +1,60 @@
 <view class="container">
-  <scroll-view class="chat-window" scroll-y="true" scroll-into-view="{{lastMessageId}}">
-    <view wx:for="{{messages}}" wx:key="id" id="{{item.id}}" class="message-row {{item.type}}">
-      <text class="prefix">[{{item.time}}] {{item.type == 'user' ? '用户' : 'CLAW@系统'}}# </text>
-      <view class="content">
-        <text wx:if="{{item.text}}">{{item.text}}</text>
-        <image wx:if="{{item.image}}" src="{{item.image}}" mode="aspectFit" class="msg-image" bindtap="previewImage" data-src="{{item.image}}"></image>
-        <view wx:if="{{item.file}}" class="file-box" bindtap="openFile" data-url="{{item.file}}">
-          <text>文件：{{item.fileName || '附件'}}</text>
+  <scroll-view 
+    class="chat-list" 
+    scroll-y 
+    scroll-with-animation 
+    scroll-into-view="{{lastMessageId}}">
+    
+    <view wx:for="{{messages}}" wx:key="id" id="{{item.id}}" class="message-item {{item.type}}">
+      <view class="msg-header">
+        <text class="time">[{{item.time}}]</text>
+        <text class="user-id">{{item.type === 'user' ? userPhone : assistantName}}@{{item.type === 'user' ? '终端' : '系统'}}#</text>
+      </view>
+      
+      <view class="msg-body">
+        <text wx:if="{{item.text}}" selectable>{{item.text}}</text>
+        <image 
+          wx:if="{{item.image}}" 
+          src="{{item.image}}" 
+          mode="widthFix" 
+          class="msg-image"
+          bindtap="previewImage"
+          data-src="{{item.image}}"></image>
+        <view 
+          wx:if="{{item.file}}" 
+          class="msg-file" 
+          bindtap="openFile" 
+          data-url="{{item.file}}">
+          <text>📄 {{item.fileName || '文件下载'}}</text>
         </view>
       </view>
     </view>
-    <view wx:if="{{isTyping}}" class="message-row system">
-      <text class="prefix">CLAW@系统# </text>
-      <text class="cursor">_</text>
+    
+    <view class="typing-indicator" wx:if="{{isTyping}}">
+      <text>ANALYZING INCOMING DATA...</text>
     </view>
+    
+    <view id="bottom-anchor"></view>
   </scroll-view>
 
-  <view class="action-bar">
-    <view class="action-btn" bindtap="chooseImage">图片</view>
-    <view class="action-btn" bindtap="chooseFile">文件</view>
-    <view class="action-btn" bindtouchstart="startVoice" bindtouchend="stopVoice">语音</view>
-  </view>
-
   <view class="input-area">
-    <text class="input-prefix">></text>
-    <input class="main-input" 
-           value="{{inputValue}}" 
-           bindinput="onInput" 
-           bindconfirm="sendMessage" 
-           placeholder="输入命令..." 
-           placeholder-style="color: #004411;"
-           confirm-type="send"
-           focus="true"/>
+    <view class="tool-bar">
+      <view class="tool-item" bindtap="chooseImage">IMG</view>
+      <view class="tool-item" bindtap="chooseFile">FILE</view>
+      <view class="tool-item" bindtouchstart="startVoice" bindtouchend="stopVoice">VOICE</view>
+      <view class="tool-item logout" bindtap="logout">EXIT</view>
+    </view>
+    <view class="input-box">
+      <input 
+        class="main-input" 
+        value="{{inputValue}}" 
+        placeholder="ENTER COMMAND..." 
+        placeholder-style="color: #004400"
+        bindinput="onInput"
+        bindconfirm="sendMessage"
+        confirm-type="send"
+      />
+      <view class="send-btn" bindtap="sendMessage">EXEC</view>
+    </view>
   </view>
 </view>

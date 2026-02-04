@@ -7,7 +7,9 @@ Page({
     ],
     inputValue: '',
     lastMessageId: 'm0',
-    isTyping: false
+    isTyping: false,
+    userPhone: '',
+    assistantName: '墨影'
   },
 
   onLoad() {
@@ -20,7 +22,8 @@ Page({
 
     let sessionKey = wx.getStorageSync('claw_session_key');
     if (!sessionKey) {
-      sessionKey = `user-${phone}`;
+      // 容错处理
+      sessionKey = wx.getStorageSync('user_openid') || `user-${phone}`;
       wx.setStorageSync('claw_session_key', sessionKey);
     }
     app.globalData.sessionKey = sessionKey;
@@ -31,18 +34,17 @@ Page({
 
   fetchHistory() {
     wx.request({
-      url: `${app.globalData.apiUrl.replace('/wechat', '')}/api/v1/sessions/history`,
+      url: `${app.globalData.apiUrl.replace('/wechat', '').replace('/v1/chat/completions', '')}/api/v1/sessions/history`,
       method: 'GET',
       data: {
         sessionKey: app.globalData.sessionKey,
-        limit: 20
+        limit: 30
       },
       header: {
         'Authorization': 'Bearer 888888'
       },
       success: (res) => {
         if (res.data && res.data.data) {
-          // 将 OpenClaw 历史记录转换为小程序格式
           const history = res.data.data.map(m => ({
             id: m.id,
             time: new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -52,6 +54,9 @@ Page({
           
           if (history.length > 0) {
             this.setData({ messages: history, lastMessageId: history[history.length-1].id });
+          } else {
+            // 如果没有历史记录，说明是新用户，发送一条隐藏的初始化触发指令（可选）
+            // 或者等待用户发第一句话，Agent 会根据 AGENTS.md 自动触发 onboarding
           }
         }
       }
@@ -63,7 +68,7 @@ Page({
     wx.reLaunch({ url: '../login/login' });
   },
 
-  // 选择并上传图片
+  // 这里的逻辑保持老大之前的多模态功能
   chooseImage() {
     wx.chooseMedia({
       count: 1,
@@ -76,30 +81,28 @@ Page({
     });
   },
 
-  // 选择并上传文件 (PDF/DOC等)
   chooseFile() {
     wx.chooseMessageFile({
       count: 1,
       type: 'file',
       success: (res) => {
         const file = res.tempFiles[0];
-        this.addMessage('user', `Sending file: ${file.name}`, { file: file.path, fileName: file.name });
+        this.addMessage('user', `正在发送文件：${file.name}`, { file: file.path, fileName: file.name });
         this.uploadFile(file.path, 'file');
       }
     });
   },
 
-  // 语音输入
   startVoice() {
     this.recorder = wx.getRecorderManager();
     this.recorder.start({ format: 'mp3' });
-    wx.showToast({ title: 'RECORDING...', icon: 'none' });
+    wx.showToast({ title: '正在录音...', icon: 'none' });
   },
 
   stopVoice() {
     this.recorder.stop();
     this.recorder.onStop((res) => {
-      this.addMessage('user', 'Sent a voice message.');
+      this.addMessage('user', '发送了一条语音消息。');
       this.uploadFile(res.tempFilePath, 'audio');
     });
   },
@@ -110,9 +113,10 @@ Page({
       url: app.globalData.uploadUrl,
       filePath: path,
       name: 'file',
+      header: { 'Authorization': 'Bearer 888888' },
       formData: { type: type, sessionKey: app.globalData.sessionKey || '' },
       success: (res) => {
-        let msg = 'FILE RECEIVED AND PROCESSED.';
+        let msg = '文件已处理。';
         try {
           const data = JSON.parse(res.data);
           msg = data.reply || data.message || msg;
@@ -166,26 +170,23 @@ Page({
       url: app.globalData.apiUrl,
       method: 'POST',
       header: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer 888888'
       },
       data: {
         model: 'openclaw:main',
         messages: [{ role: 'user', content: text }],
-        user: app.globalData.sessionKey || ''
+        user: app.globalData.sessionKey || 'unknown'
       },
       success: (res) => {
-        let replyText = 'COMMAND EXECUTED.';
-        if (res.data) {
-          replyText =
-            res.data.reply ||
-            res.data.message ||
-            (typeof res.data === 'string' ? res.data : replyText);
+        let replyText = '命令已执行。';
+        if (res.data && res.data.choices && res.data.choices[0] && res.data.choices[0].message) {
+          replyText = res.data.choices[0].message.content;
         }
         this.addMessage('system', replyText);
       },
       fail: (err) => {
-        console.error('Uplink error:', err);
-        this.addMessage('system', `ERROR: UPLINK FAILED (${err.errMsg || 'UNKNOWN_ERROR'})`);
+        this.addMessage('system', `ERROR: UPLINK FAILED (${err.errMsg})`);
       },
       complete: () => {
         this.setData({ isTyping: false });
