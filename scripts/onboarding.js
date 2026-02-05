@@ -14,6 +14,10 @@ async function onboard(userId) {
   const nickname = await ask("我该怎么称呼你？（例如：老大、老板、或者你的名字）");
   const preferences = await ask("你有什么特别的偏好吗？（比如：简洁回答、多用表情符号、或者特定的技术领域）");
 
+  // 2.5 Show Skill Introduction
+  const skillsIntro = await read("templates/welcome_skills.md");
+  await send(skillsIntro);
+
   // 3. Create user directory and initial files
   await mkdir(`memory/${userId}`);
   const userMd = `# USER.md - Profile for ${userId}
