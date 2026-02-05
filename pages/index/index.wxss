@@ -15,6 +15,11 @@
   margin-bottom: 16rpx;
 }
 
+.topbar-text {
+  display: flex;
+  flex-direction: column;
+}
+
 .logo {
   height: 40rpx;
   width: 40rpx;
@@ -23,6 +28,11 @@
 .topbar-title {
   font-weight: bold;
   font-size: 28rpx;
+}
+
+.topbar-sub {
+  font-size: 22rpx;
+  color: #9DFF9D;
 }
 
  

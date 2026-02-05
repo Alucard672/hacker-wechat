@@ -22,7 +22,8 @@ Page({
     ],
     inputValue: '',
     lastMessageId: 'm0',
-    isTyping: false
+    isTyping: false,
+    currentUser: ''
   },
 
   onLoad() {
@@ -43,6 +44,9 @@ Page({
     }
     app.globalData.openId = openId;
     app.globalData.sessionKey = openId;
+    const nickname = wx.getStorageSync(`claw_nick_${openId}`) || '用户';
+    const display = phone ? `${nickname} · ${phone}` : nickname;
+    this.setData({ currentUser: display });
 
     const history = loadHistory(openId);
     if (history.length) {

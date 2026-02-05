@@ -1,7 +1,10 @@
 <view class="container">
   <view class="topbar">
     <image class="logo" src="/images/logo.png" mode="heightFix"></image>
-    <text class="topbar-title">极客笔记</text>
+    <view class="topbar-text">
+      <text class="topbar-title">极客笔记</text>
+      <text class="topbar-sub">{{currentUser}}</text>
+    </view>
   </view>
   <scroll-view class="chat-window" scroll-y="true" scroll-into-view="{{lastMessageId}}">
     <view wx:for="{{messages}}" wx:key="id" id="{{item.id}}" class="message-row {{item.type}} {{item.isLatest ? 'latest' : 'history'}}">

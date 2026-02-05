@@ -14,7 +14,8 @@ Page({
     loading: false,
     openId: '',
     phone: '',
-    accessStatus: ''
+    accessStatus: '',
+    nickname: ''
   },
 
   onLoad() {
@@ -25,8 +26,12 @@ Page({
     if (this.data.loading) return;
     const cachedOpenId = wx.getStorageSync('claw_openid') || '';
     const cachedPhone = cachedOpenId ? wx.getStorageSync(`claw_phone_${cachedOpenId}`) : '';
+    const cachedNickname = cachedOpenId ? wx.getStorageSync(`claw_nick_${cachedOpenId}`) : '';
     if (cachedPhone) {
       this.setData({ phone: String(cachedPhone) });
+    }
+    if (cachedNickname) {
+      this.setData({ nickname: String(cachedNickname) });
     }
     this.setData({ loading: true, status: '正在登录...' });
 
@@ -58,6 +63,9 @@ Page({
             wx.setStorageSync('claw_openid', openId);
             if (phone) {
               wx.setStorageSync(`claw_phone_${openId}`, phone);
+            }
+            if (this.data.nickname) {
+              wx.setStorageSync(`claw_nick_${openId}`, this.data.nickname);
             }
             wx.setStorageSync(`claw_access_${openId}`, accessStatus);
             app.globalData.openId = openId;
@@ -142,6 +150,20 @@ Page({
         this.setData({ status: `绑定失败：${err.errMsg || 'UNKNOWN_ERROR'}` });
       }
     });
+  },
+
+  bindNickname(e) {
+    const info = e?.detail?.userInfo;
+    if (!info || !info.nickName) {
+      this.setData({ status: '获取昵称失败' });
+      return;
+    }
+    const openId = this.data.openId || wx.getStorageSync('claw_openid') || '';
+    const nickname = String(info.nickName);
+    if (openId) {
+      wx.setStorageSync(`claw_nick_${openId}`, nickname);
+    }
+    this.setData({ nickname, status: '昵称已更新' });
   },
 
   goChat() {
