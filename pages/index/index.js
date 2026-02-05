@@ -36,6 +36,11 @@ Page({
       wx.reLaunch({ url: '/pages/login/login' });
       return;
     }
+    const accessStatus = wx.getStorageSync(`claw_access_${openId}`);
+    if (accessStatus && accessStatus !== 'approved') {
+      wx.reLaunch({ url: '/pages/login/login' });
+      return;
+    }
     app.globalData.openId = openId;
     app.globalData.sessionKey = openId;
 

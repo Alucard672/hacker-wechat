@@ -13,7 +13,8 @@ Page({
     status: '初始化中...',
     loading: false,
     openId: '',
-    phone: ''
+    phone: '',
+    accessStatus: ''
   },
 
   onLoad() {
@@ -45,6 +46,7 @@ Page({
           success: (resp) => {
             const openId = resp.data && resp.data.openid ? String(resp.data.openid) : '';
             const phone = resp.data && resp.data.phone ? String(resp.data.phone) : '';
+            const accessStatus = resp.data && resp.data.accessStatus ? String(resp.data.accessStatus) : 'pending';
             if (!openId) {
               this.setData({
                 loading: false,
@@ -57,15 +59,23 @@ Page({
             if (phone) {
               wx.setStorageSync(`claw_phone_${openId}`, phone);
             }
+            wx.setStorageSync(`claw_access_${openId}`, accessStatus);
             app.globalData.openId = openId;
             app.globalData.sessionKey = openId;
+            let nextStatus = '登录成功，请绑定手机号';
+            if (phone && accessStatus === 'approved') {
+              nextStatus = '已绑定手机号，正在进入聊天';
+            } else if (phone && accessStatus !== 'approved') {
+              nextStatus = '已提交申请，等待管理员审核';
+            }
             this.setData({
               loading: false,
-              status: phone ? '已绑定手机号，正在进入聊天' : '登录成功，请绑定手机号',
+              status: nextStatus,
               openId,
-              phone: phone || ''
+              phone: phone || '',
+              accessStatus
             });
-            if (phone) {
+            if (phone && accessStatus === 'approved') {
               wx.reLaunch({ url: '/pages/index/index' });
             }
           },
@@ -110,13 +120,23 @@ Page({
       data: { openid: openId, code },
       success: (resp) => {
         const phone = resp.data && resp.data.phone ? String(resp.data.phone) : '';
+        const accessStatus = resp.data && resp.data.accessStatus ? String(resp.data.accessStatus) : this.data.accessStatus;
         if (!phone) {
           this.setData({ status: '绑定失败：未获取手机号' });
           return;
         }
         wx.setStorageSync(`claw_phone_${openId}`, phone);
-        this.setData({ status: '手机号绑定成功', phone });
-        wx.reLaunch({ url: '/pages/index/index' });
+        if (accessStatus) {
+          wx.setStorageSync(`claw_access_${openId}`, accessStatus);
+        }
+        this.setData({
+          status: accessStatus === 'approved' ? '手机号绑定成功，正在进入聊天' : '已提交申请，等待管理员审核',
+          phone,
+          accessStatus
+        });
+        if (accessStatus === 'approved') {
+          wx.reLaunch({ url: '/pages/index/index' });
+        }
       },
       fail: (err) => {
         this.setData({ status: `绑定失败：${err.errMsg || 'UNKNOWN_ERROR'}` });
@@ -131,6 +151,10 @@ Page({
     }
     if (!this.data.phone) {
       this.setData({ status: '请先绑定手机号' });
+      return;
+    }
+    if (this.data.accessStatus !== 'approved') {
+      this.setData({ status: '等待管理员审核通过后才能进入' });
       return;
     }
     wx.reLaunch({ url: '/pages/index/index' });
